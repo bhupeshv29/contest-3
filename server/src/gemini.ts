@@ -1,8 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
+import { log } from "node:console";
+import 'dotenv/config';
 
 
-const apiKey = process.env.GEMINI_API_KEY;
-const modelName = process.env.GEMINI_MODEL ?? "gemini-3.5-flash";
+
+const apiKey = process.env.GEMINI_API_KEY || "";
+const modelName = process.env.GEMINI_MODEL ?? "gemma-4-31b-it";
 
 export async function generateWithGemini(prompt: string): Promise<string> {
   if (!apiKey) {
@@ -15,5 +18,6 @@ export async function generateWithGemini(prompt: string): Promise<string> {
     contents: prompt,
   });
 
+  // console.log(result.text);
   return result.text ?? "";
 }

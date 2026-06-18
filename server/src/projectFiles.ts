@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import {mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ProjectFile } from "./types.js";
@@ -54,4 +54,40 @@ async function walkProject(directory: string): Promise<string[]> {
 
 function toProjectPath(filePath: string) {
   return path.relative(projectRoot, filePath).split(path.sep).join("/");
+}
+
+
+export async function writeProjectFile(
+  projectPath: string,
+  content: string,
+): Promise<void> {
+  const safePath = resolveProjectPath(projectPath);
+  await mkdir(path.dirname(safePath), { recursive: true });
+  await writeFile(safePath, content, "utf8");
+}
+
+
+function resolveProjectPath(projectPath: string): string {
+  if (!projectPath || projectPath.includes("\0")) {
+    throw new Error("Invalid file path");
+  }
+
+  const normalizedPath = projectPath.replace(/^\/+/, "");
+  const resolvedPath = path.resolve(projectRoot, normalizedPath);
+  const relativePath = path.relative(projectRoot, resolvedPath);
+
+  if (
+    relativePath.startsWith("..") ||
+    path.isAbsolute(relativePath) ||
+    ignoredDirectories.has(relativePath.split(path.sep)[0])
+  ) {
+    throw new Error(`File path is outside project/: ${projectPath}`);
+  }
+
+  const extension = path.extname(resolvedPath);
+  if (!editableExtensions.has(extension)) {
+    throw new Error(`File type is not editable: ${projectPath}`);
+  }
+
+  return resolvedPath;
 }
